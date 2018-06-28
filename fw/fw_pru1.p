@@ -18,7 +18,7 @@
 //assign structure to Local registers
 .assign __xMap, R1,R5, xMap
 
-#define PRU0_ARM_INTERRUPT 19
+#define PRU1_ARM_INTERRUPT 20
 
 //=================
 
@@ -47,11 +47,11 @@ SigFromHostDetected:
 		sbbo    r1, r0, 0, 40        // store 40 byte result at addr 0
 		MOV	xMap.TimeStamp_Past,xMap.TimeStamp
 
-		mov     r31.b0, PRU0_ARM_INTERRUPT+16 //send out event
+		mov     r31.b0, PRU1_ARM_INTERRUPT+16 //send out event
 		ADD	xMap.TimeStamp, xMap.TimeStamp, 7 + 80 // 7 stall cycles at this instruction + -1 jump
 		JMP 	_Start
 
 
-DONE: 		mov     r31.b0, PRU0_ARM_INTERRUPT+16
+DONE: 		mov     r31.b0, PRU1_ARM_INTERRUPT+16
     		halt
 
