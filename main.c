@@ -26,42 +26,46 @@
 int pThreadFxnMain_10ms(PruDataRamMap_t* pArg[])
 {
     printf("  Entered Main........\n");
-//    usleep(10000);
-    PruDataRamMap_t* _pru[2];
-    _pru[0] = (PruDataRamMap_t*)(&pArg[0]);
-   // _pru[1] = (PruDataRamMap_t*)(pArg[1]);
+    float dT[2] = {0,0};
+    float v[2] = {0,0};
+    float dX = 16.6;
+    int j = 0;
     int i = 0;
-    while(i < 500 )
+    while(j < ITER )
     {
+        for(i = 0; i <=1; i++)
+        {
+            dT[i] = (dataRamMap_pru[i]->dT * 5.0)*0.000000001;
+            v[i] = dX/dT[i];
+            printf("[PRU_%d]: [%d] |  dT: [%f] (ns) | V: [%f] (m/s)\n", i, dataRamMap_pru[i]->Idx, dT[i], v[i]);
 
- //       printf("[i = %d] [PRU_0]: [%d] |  dT(ns): [%f] \n", i, dataRamMap_pru[0]->Idx, (dataRamMap_pru[0]->dT * 5.0)*0.000000001);
-
- //       printf("[i = %d] [PRU_0]: [%d] |  dT(ns): [%f] \n", i, _pru[0]->Idx, (_pru[0]->dT * 5.0)*0.000000001);
-       // printf("[i = %d] [PRU_1]: [%d] |  dT(ns): [%f] \n", i, _pru[1].Idx, (_pru[1]->dT * 5.0)*0.000000001);
-
-//        printf("[PRU_0]: [%d] |  dT(ns): [%f] (Ts[%d] -> Ts-1[%d])\n", _pru[0]->Idx, (_pru[0]->dT * 5.0)*0.000000001, _pru[0]->TimeStamp, _pru[0]->TimeStamp_Past);
-//        printf("[PRU_1]: [%d] |  dT(ns): [%f] (Ts[%d] -> Ts-1[%d])\n", _pru[1]->Idx, (_pru[1]->dT * 5.0)*0.000000001, _pru[1]->TimeStamp, _pru[1]->TimeStamp_Past);
+        }
+        //printf("[PRU_0]: [%d] |  dT(ns): [%f] (Ts[%d] -> Ts-1[%d])\n", dataRamMap_pru[0]->Idx, (dataRamMap_pru[0]->dT * 5.0)*0.000000001, dataRamMap_pru[0]->TimeStamp, dataRamMap_pru[0]->TimeStamp_Past);
+        //printf("[PRU_1]: [%d] |  dT(ns): [%f] (Ts[%d] -> Ts-1[%d])\n", dataRamMap_pru[1]->Idx, (dataRamMap_pru[1]->dT * 5.0)*0.000000001, dataRamMap_pru[1]->TimeStamp, dataRamMap_pru[1]->TimeStamp_Past);
         usleep(1000); //10ms sleep
-        i++;
+        j++;
     }
+
     return 0;
 }
 
-int pThreadFxnPru0(void *pArg)
+int pThreadFxnPru0(PruDataRamMap_t * pArg)
 {
 
+
     printf("===> [Entered] Thread_PRU[0].......!\n");
-    PruDataRamMap_t *_pru = (PruDataRamMap_t*)pArg;
+ //   PruDataRamMap_t *_pru;
+
 
     // Map PRU DATARAM;
-    prussdrv_map_prumem(PRUSS0_PRU0_DATARAM, (void * *)&_pru);
+    prussdrv_map_prumem(PRUSS0_PRU0_DATARAM, (void * *)&dataRamMap_pru[0]);
 
     // Manually initialize PRU DATARAM - this struct is mapped to the// PRU, so these assignments actually modify DATARAM directly.
-    _pru->Idx = 0x4;
-    _pru->SigFromA8 = 0x1;
-    _pru->TimeStamp = 0;
-    _pru->TimeStamp_Past = 0;
-    _pru->dT = 0;
+    dataRamMap_pru[0]->Idx = 0x4;
+    dataRamMap_pru[0]->SigFromA8 = 0x1;
+    dataRamMap_pru[0]->TimeStamp = 0;
+    dataRamMap_pru[0]->TimeStamp_Past = 0;
+    dataRamMap_pru[0]->dT = 0;
     // Memory fence: not strictly needed here, as compiler will insert
     // an implicit fence when prussdrv_exec_code(...) is called, but
     // a good habit to be in.
@@ -73,7 +77,7 @@ int pThreadFxnPru0(void *pArg)
 
         return -1;
     }
-    while(_pru->Idx < ITER)
+    while(dataRamMap_pru[0]->Idx < ITER)
     {
 
 
@@ -87,9 +91,9 @@ int pThreadFxnPru0(void *pArg)
 
         __sync_synchronize(); //??
 
-        printf("[PRU_0]: [%d] |  dT(ns): [%f] (Ts[%d] -> Ts-1[%d])\n", _pru->Idx, (_pru->dT*5.0)*0.000000001, _pru->TimeStamp, _pru->TimeStamp_Past);
+        //printf("[PRU_0]: [%d] |  dT(ns): [%f] (Ts[%d] -> Ts-1[%d])\n", dataRamMap_pru[0]->Idx, (dataRamMap_pru[0]->dT*5.0)*0.000000001, dataRamMap_pru[0]->TimeStamp, dataRamMap_pru[0]->TimeStamp_Past);
         usleep(500);
-        _pru->SigFromA8 = 0x1; //loop on
+        dataRamMap_pru[0]->SigFromA8 = 0x1; //loop on
 
     }
 
@@ -103,16 +107,16 @@ int pThreadFxnPru1(void *pArg)
 {
 
     printf("===> [Entered] Thread_PRU[1].......!\n");
-    PruDataRamMap_t *_pru = (PruDataRamMap_t*)pArg;
+    //PruDataRamMap_t *_pru = (PruDataRamMap_t*)pArg;
     // Map PRU DATARAM;
-    prussdrv_map_prumem(PRUSS0_PRU1_DATARAM, (void * *)&_pru);
+    prussdrv_map_prumem(PRUSS0_PRU1_DATARAM, (void * *)&dataRamMap_pru[1]);
 
     // Manually initialize PRU DATARAM - this struct is mapped to the// PRU, so these assignments actually modify DATARAM directly.
-    _pru->Idx = 0x0;
-    _pru->SigFromA8 = 0x1;
-    _pru->TimeStamp = 0;
-    _pru->TimeStamp_Past = 0;
-    _pru->dT = 0;
+    dataRamMap_pru[1]->Idx = 0x0;
+    dataRamMap_pru[1]->SigFromA8 = 0x1;
+    dataRamMap_pru[1]->TimeStamp = 0;
+    dataRamMap_pru[1]->TimeStamp_Past = 0;
+    dataRamMap_pru[1]->dT = 0;
     // Memory fence: not strictly needed here, as compiler will insert
     // an implicit fence when prussdrv_exec_code(...) is called, but
     // a good habit to be in.
@@ -124,7 +128,7 @@ int pThreadFxnPru1(void *pArg)
 
         return -1;
     }
-    while(_pru->Idx < ITER)
+    while(dataRamMap_pru[1]->Idx < ITER)
     {
 
 
@@ -138,9 +142,9 @@ int pThreadFxnPru1(void *pArg)
 
         __sync_synchronize(); //??
 
-        printf("[PRU_1]: [%d] |  dT(ns): [%f] (Ts[%d] -> Ts-1[%d])\n", _pru->Idx, (_pru->dT*5.0)*0.000000001, _pru->TimeStamp, _pru->TimeStamp_Past);
+        //printf("[PRU_1]: [%d] |  dT(ns): [%f] (Ts[%d] -> Ts-1[%d])\n", dataRamMap_pru[1]->Idx, (dataRamMap_pru[1]->dT*5.0)*0.000000001, dataRamMap_pru[1]->TimeStamp, dataRamMap_pru[1]->TimeStamp_Past);
         usleep(500);
-        _pru->SigFromA8 = 0x1; //loop on
+        dataRamMap_pru[1]->SigFromA8 = 0x1; //loop on
 
     }
 
@@ -152,7 +156,7 @@ int pThreadFxnPru1(void *pArg)
 
 int main(int argc, char * argv[])
 {
-
+  //PruDataRamMap_t * dataRamMap_pru[2];
   tpruss_intc_initdata prussIntCInitData = PRUSS_INTC_INITDATA;
 
   int ret;
@@ -181,10 +185,13 @@ int main(int argc, char * argv[])
  //PRU is ready at this point, create the threads
   pthread_t Thread_pru[2],ThreadMain;
 
-  pthread_create (&Thread_pru[0], NULL, (void *) &pThreadFxnPru0, &dataRamMap_pru[0]);
-  pthread_create (&Thread_pru[1], NULL, (void *) &pThreadFxnPru1, &dataRamMap_pru[1]);
+  pthread_create (&Thread_pru[0], NULL, (void *) &pThreadFxnPru0, (int *)(&dataRamMap_pru[0]));
+  pthread_create (&Thread_pru[1], NULL, (void *) &pThreadFxnPru1, (PruDataRamMap_t*)dataRamMap_pru[1]);
   usleep(10000);
-  pthread_create (&ThreadMain, NULL, (void *) &pThreadFxnMain_10ms, (void*)dataRamMap_pru);
+  pthread_create (&ThreadMain, NULL, (void *) &pThreadFxnMain_10ms, dataRamMap_pru);
+
+
+
 
   pthread_join(Thread_pru[0], NULL);
   pthread_join(Thread_pru[1], NULL);
